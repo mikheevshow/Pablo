@@ -1,0 +1,84 @@
+{
+    "addresses": [
+        {
+            "blockhain": "arbitrum",
+            "tokens": [
+                {
+                    "symbol": "ARB",
+                    "native": true,
+                    "address": ""
+                },
+                {
+                    "symbol": "USDC",
+                    "native": false,
+                    "address": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+                },
+                {
+                    "symbol": "USDT",
+                    "native": false,
+                    "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+                }
+            ]
+        },
+        {
+            "blockhain": "polygon",
+            "tokens": [
+                {
+                    "symbol": "MATIC",
+                    "native": true,
+                    "address": ""
+                },
+                {
+                    "symbol": "USDC",
+                    "native": false,
+                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+                },
+                {
+                    "symbol": "USDT",
+                    "native": false,
+                    "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+                }
+            ]
+        },
+        {
+            "blockhain": "fantom",
+            "tokens": [
+                {
+                    "symbol": "FMT",
+                    "native": true,
+                    "address": ""
+                },
+                {
+                    "symbol": "USDC",
+                    "native": false,
+                    "address": "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75"
+                },
+                {
+                    "symbol": "fUSDT",
+                    "native": false,
+                    "address": "0x049d68029688eAbF473097a2fC38ef61633A3C7A"
+                }
+            ]
+        },
+        {
+            "blockhain": "ethereum",
+            "tokens": [
+                {
+                    "symbol": "ETH",
+                    "native": true,
+                    "address": ""
+                },
+                {
+                    "symbol": "USDC",
+                    "native": false,
+                    "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+                },
+                {
+                    "symbol": "USDT",
+                    "native": false,
+                    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+                }
+            ]
+        }
+    ]
+}
