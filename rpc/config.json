@@ -22,7 +22,7 @@
             "token": "BNB"
         },
         {
-            "chain": "MATIC",
+            "chain": "polygon",
             "chain_id": 137,
             "rpc": "https://polygon-rpc.com",
             "scan": "https://polygonscan.com/tx",

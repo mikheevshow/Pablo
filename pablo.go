@@ -1,12 +1,19 @@
 package pablo
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"log"
+	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mikheevshow/Pablo/cex"
+	"golang.org/x/crypto/sha3"
 )
 
 type Address string
@@ -96,12 +103,90 @@ func bridge(bridgeClient *ethclient.Client, privateKey string, symbol string, am
 	return nil
 }
 
-func transfer(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, symbol string) error {
+func transferNative(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, symbolAddress string) error {
+
+
 	return nil
 }
 
-func swapDex(dexClient *ethclient.Client, amount string, fromSymbol string, toSymbol string, wallet PrivateKey, blockchain string) error {
+func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, denomindation int, symbolAddress string) {
+	
+	value := big.NewInt(0)
+	toAddress := common.HexToAddress(to.ToString())
+	tokenAddress := common.HexToAddress(symbolAddress)
 
+	transferSignature := []byte("transfer(address,uint256)")
+
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(transferSignature)
+
+	methodID := hash.Sum(nil)[:4]
+
+	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
+
+	amnt := new(big.Int)
+	amnt.SetString(amount, denomindation)
+	paddedAmnt := common.LeftPadBytes(amnt.Bytes(), 32)
+
+
+	var data []byte
+	data = append(data, methodID...)
+	data = append(data, paddedAddress...)
+	data = append(data, paddedAmnt...)
+
+	privateKey, err := crypto.HexToECDSA(from.ToString())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("Public key from private key is not ok")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := blockchainClient.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasLimit, err := blockchainClient.EstimateGas(context.Background(), ethereum.CallMsg{
+		To: &tokenAddress,
+		Data: data,
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasPrice, err := blockchainClient.SuggestGasPrice(context.Background())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx := types.NewTransaction(nonce, tokenAddress, value, gasLimit, gasPrice, data)
+
+	chainID, err := blockchainClient.NetworkID(context.Background())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = blockchainClient.SendTransaction(context.Background(), signedTx)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func swapDex(dexClient *ethclient.Client, amount string, fromSymbol string, toSymbol string, wallet PrivateKey, blockchain string) error {
 	return nil
 }
 
