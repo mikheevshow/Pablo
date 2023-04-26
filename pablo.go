@@ -58,12 +58,15 @@ var bridgeMap = map[string]*BridgeConfig{
 type Pablo struct {
 	blockchainClientProvider BlockchainClientProvider
 	dexClientProvider        DexClientProvider
+	tokenContractService     TokenContractService
 }
 
 func CreatePablo() *Pablo {
 	blockchainClientProvider := NewBlockchainClientProvider()
+	tokenContractService := NewTokenContractService()
 	return &Pablo{
 		blockchainClientProvider: blockchainClientProvider,
+		tokenContractService: tokenContractService,
 	}
 }
 
@@ -74,8 +77,22 @@ func (p *Pablo) TransferFromCex(name string, credentials cex.Creds, symbol strin
 func (p *Pablo) Transfer(from PrivateKey, to Address, amount string, symbol string, blockchain string) *Pablo {
 	fromAddress := from.GetAddress().ToString()
 	log.Println("Start transfering from address " + fromAddress + " to address " + to.ToString() + " amount " + amount + " symbol " + symbol + " on blockchain " + blockchain)
+
+	supported := p.tokenContractService.IsSymbolSupportedByBlockchain(blockchain, symbol)
+	if !supported {
+		log.Fatal("Symbol " + symbol + " not supported")
+	}
+
 	client := p.blockchainClientProvider.GetClient(blockchain)
-	err := transfer(client, from, to, amount, symbol)
+	isNative := p.tokenContractService.IsNative(blockchain, symbol)
+	var err error
+	if isNative {
+		err = transferNative(client, from, to, amount)
+	} else {
+		tokenAddress := p.tokenContractService.GetContractAddress(blockchain, symbol)
+		err = transferErc20(client, from, to, amount, 10, tokenAddress)
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +120,7 @@ func bridge(bridgeClient *ethclient.Client, privateKey string, symbol string, am
 	return nil
 }
 
-func transferNative(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, symbolAddress string) error {
+func transferNative(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string) error {
 
 	privateKey, err := crypto.HexToECDSA(from.ToString())
 	if err != nil {
@@ -233,7 +250,25 @@ func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Addre
 	return nil
 }
 
-func swapDex(dexClient *ethclient.Client, amount string, fromSymbol string, toSymbol string, wallet PrivateKey, blockchain string) error {
+func swapDex(dexClient *ethclient.Client, amount string, fromAddress string, toAddress string, wallet PrivateKey) error {
+
+	// privateKey, err := crypto.HexToECDSA(wallet.ToString())
+	// if err != nil {
+	// 	return err
+	// }
+
+	// publicKey := privateKey.Public()
+	// publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	// if !ok {
+	// 	log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	// }
+
+	// fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+
+
+
+
 	return nil
 }
 
