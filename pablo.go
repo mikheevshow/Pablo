@@ -105,12 +105,58 @@ func bridge(bridgeClient *ethclient.Client, privateKey string, symbol string, am
 
 func transferNative(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, symbolAddress string) error {
 
+	privateKey, err := crypto.HexToECDSA(from.ToString())
+	if err != nil {
+		return err
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	nonce, err := blockchainClient.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return err
+	}
+
+	value := new(big.Int)
+	value.SetString(amount, 0)
+
+	gasLimit := uint64(21000)
+	gasPrice, err := blockchainClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return err
+	}
+
+	toAddress := common.HexToAddress(to.ToString())
+
+	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, nil)
+
+	chainID, err := blockchainClient.NetworkID(context.Background())
+	if err != nil {
+		return err
+	}
+
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		return err
+	}
+	 
+	err = blockchainClient.SendTransaction(context.Background(), signedTx)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, denomindation int, symbolAddress string) {
-	
+func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Address, amount string, denomindation int, symbolAddress string) error {
+
 	value := big.NewInt(0)
 	toAddress := common.HexToAddress(to.ToString())
 	tokenAddress := common.HexToAddress(symbolAddress)
@@ -128,7 +174,6 @@ func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Addre
 	amnt.SetString(amount, denomindation)
 	paddedAmnt := common.LeftPadBytes(amnt.Bytes(), 32)
 
-
 	var data []byte
 	data = append(data, methodID...)
 	data = append(data, paddedAddress...)
@@ -136,7 +181,7 @@ func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Addre
 
 	privateKey, err := crypto.HexToECDSA(from.ToString())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	publicKey := privateKey.Public()
@@ -148,22 +193,22 @@ func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Addre
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := blockchainClient.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	gasLimit, err := blockchainClient.EstimateGas(context.Background(), ethereum.CallMsg{
-		To: &tokenAddress,
+		To:   &tokenAddress,
 		Data: data,
 	})
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	gasPrice, err := blockchainClient.SuggestGasPrice(context.Background())
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	tx := types.NewTransaction(nonce, tokenAddress, value, gasLimit, gasPrice, data)
@@ -171,19 +216,21 @@ func transferErc20(blockchainClient *ethclient.Client, from PrivateKey, to Addre
 	chainID, err := blockchainClient.NetworkID(context.Background())
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	err = blockchainClient.SendTransaction(context.Background(), signedTx)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
 
 func swapDex(dexClient *ethclient.Client, amount string, fromSymbol string, toSymbol string, wallet PrivateKey, blockchain string) error {
